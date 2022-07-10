@@ -146,6 +146,8 @@ function traverse(DomNode $element) {
   </head>
   <body>
     <?php traverse($doc->documentElement) ?>
-    <p>fin</p>
+    <footer>
+      <?= sprintf('Memory used %sKb', memory_get_peak_usage(true)/1024) ?>  
+    </footer>
   </body>
 </html>
