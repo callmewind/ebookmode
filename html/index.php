@@ -15,11 +15,9 @@ function hasTextOrImage(DomNode $element): bool
   return strlen(trim($element->nodeValue)) > 2 || $xpath->query(".//img", $element)->count() > 0;
 }
 
-function traverseChildren(DomNode $element): void
+function traverseChildren(DomNode $element): string
 {
-  foreach($element->childNodes as $child) {
-        traverse($child);
-  }
+  return implode(array_map(fn($child) => traverse($child), iterator_to_array($element->childNodes)));
 }
 
 function isHidden(DomNode $element): bool
@@ -32,16 +30,13 @@ function isHidden(DomNode $element): bool
     );
 }
 
-function traverse(DomNode $element) {
+function traverse(DomNode $element): string {
   global $blockElements;
   global $blockElementsXpath;
   global $xpath;
-  if(in_array($element->nodeValue, $blockElements)) {
-    echo "\n";
-  }
-
+  
   if(isHidden($element)) {
-    return;
+    return '';
   }
 
   switch($element->nodeName) {
@@ -84,70 +79,39 @@ function traverse(DomNode $element) {
     case 'ol':
     case 'ul':
     case 'article':
-      if(hasTextOrImage($element)){
-        echo "<$element->nodeName>";
-        traverseChildren($element);
-        echo "</$element->nodeName>";
-      }
-      break;
+      if(!hasTextOrImage($element)) {
+        return '';
+      }      
+      return in_array($element->nodeName, $blockElements)?
+          sprintf('<%s style="clear:both">%s</%s>', $element->nodeName, traverseChildren($element), $element->nodeName):
+          sprintf('<%s>%s</%s>', $element->nodeName, traverseChildren($element), $element->nodeName);
     case 'html':
     case 'body':
     case 'span':
-      traverseChildren($element);
-      break;
+      return traverseChildren($element);
     case '#text':
-      if(trim($element->nodeValue)) {
-        echo $element->nodeValue;
-      }
-      break;
+      return trim($element->nodeValue)? $element->nodeValue : '';
     case 'a':
       $href = trim($element->getAttribute('href'));
-      if($href && strpos($href, '#') !== 0) {
-        echo "<a href='$href'>";
-        traverseChildren($element);
-        echo "</a>";
-      }
-      break;
+      return $href && strpos($href, '#') !== 0 ?
+        sprintf('<a href="%s">%s</a>', $href, traverseChildren($element)) : '';
     case 'div':
-      if(hasTextOrImage($element)){
-        if ($xpath->query($blockElementsXpath, $element)->count()) {
-          traverseChildren($element);        
-        } else {
-          echo "<hr><div style='margin-bottom:20px'>";
-          traverseChildren($element);
-          echo "</div>";
-        }
+      if(!hasTextOrImage($element)) {
+        return '';
       }
-      break;
+      if ($xpath->query($blockElementsXpath, $element)->count()) {
+        return traverseChildren($element);        
+      }
+      return sprintf('<hr><div style="margin-bottom:20px">%s</div>',  traverseChildren($element));
     case 'img':
-        echo "<img src='".$element->getAttribute('src')."'>";
-      break;
+      return sprintf('<img style="float:right" src="%s">', $element->getAttribute('src'));
     default:
       if($text = trim($element->nodeValue)) {
-        echo "[$element->nodeName]\n";
-        traverseChildren($element);
+        return  implode(["[$element->nodeName]\n", traverseChildren($element)]);
       }
   }
+  return '';
 }
-?>
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Ebook Mode</title>
-    <style type="text/css">
-      body {
-        font-family: sans-serif;
-        font-size: 18px;
-      }
-    </style>
-  </head>
-  <body>
-    <?php traverse($doc->documentElement) ?>
-    <footer>
-      <?= sprintf('Memory used %sKb', memory_get_peak_usage(true)/1024) ?>  
-    </footer>
-  </body>
-</html>
+
+$content = traverse($doc->documentElement);
+require("../templates/base.php");
