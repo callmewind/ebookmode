@@ -1,0 +1,13 @@
+version: '3'
+
+services:
+  ebookmode:
+    container_name: ebookmode
+    image: php:alpine
+    entrypoint: "php -S 0.0.0.0:80"
+    #entrypoint: "php index.php"
+    working_dir: "/var/www/html"
+    ports:
+      - "80:80"
+    volumes:
+      - ./public:/var/www/html
