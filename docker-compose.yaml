@@ -10,4 +10,4 @@ services:
     ports:
       - "80:80"
     volumes:
-      - ./public:/var/www/html
+      - .:/var/www

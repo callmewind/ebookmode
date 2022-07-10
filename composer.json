@@ -1,0 +1,12 @@
+{
+    "name": "dropdatabase/ebookmode",
+    "description": "Allows browsing html sites on ebook browsers",
+    "type": "project",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Edu Martinez"
+        }
+    ],
+    "require": {}
+}
