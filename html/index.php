@@ -2,19 +2,23 @@
 
 use EbookMode\Filter\Filter;
 
-$url = $_GET['url'] ?? "https://www.elperiodico.com";
+$content = 'Enter URL to browse';
 
-require_once('../filter/filter.php');
+if($url = $_GET['url'] ?? '') {
+  require_once('../filter/Filter.php');
 
-$filter = new Filter(
-  file_get_contents(
-    $url,
-    false,
-    stream_context_create([
-      'http' => ['user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? 'EbookMode' ]
-    ])
-  )
-);
+  $filter = new Filter(
+    file_get_contents(
+      $url,
+      false,
+      stream_context_create([
+        'http' => ['user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? 'EbookMode' ]
+      ])
+    ), $url
+  );
 
-$content = $filter();
+  $content = $filter();  
+}
+
+
 require("../templates/base.php");

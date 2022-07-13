@@ -5,11 +5,13 @@ use DOMDocument;
 use DOMXPath;
 use DomNode;
 use LIBXML_NOERROR;
+require('LinkRewriter.php');
 
 class Filter {
 
 	private DOMDocument $doc;
 	private DOMXPath $xpath;
+	private LinkRewriter $linkRewriter;
 	private const IGNORED_ELEMENTS = [
 		'xml', '#comment', 'script', 'svg', 'iframe', 'object', 'form',
 		'button', 'input', 'select',  'textarea', 'footer', 'head'
@@ -19,11 +21,12 @@ class Filter {
 	
 	private $blockElementsXpath;
 
-	public function __construct(string $source) {
+	public function __construct(string $source, string $baseUrl) {
 		$this->doc = new DOMDocument();
 		$this->doc->loadHTML($source, LIBXML_NOERROR);
 		$this->xpath = new DOMXPath($this->doc);
 		$this->blockElementsXpath =  ".//".implode("|.//", self::BLOCK_ELEMENTS);
+		$this->linkRewriter = new LinkRewriter($baseUrl);
 	}
 
 
@@ -102,7 +105,7 @@ class Filter {
 			case '#text':
 				return trim($element->nodeValue)? $element->nodeValue : '';
 			case 'a':
-				$href = trim($element->getAttribute('href'));
+				$href = $this->linkRewriter->rewrite(trim($element->getAttribute('href')));
 				return $href && strpos($href, '#') !== 0 ?
 					sprintf('<a href="%s">%s</a>', $href, $this->traverseChildren($element)) : '';
 			case 'div':
