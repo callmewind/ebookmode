@@ -9,8 +9,10 @@ require('LinkRewriter.php');
 
 class Filter {
 
-	private DOMDocument $doc;
-	private DOMXPath $xpath;
+	private DOMDocument $sourceDoc;
+	private DOMDocument $filteredDoc;
+	private DOMXPath $sourceXpath;
+	private DOMXPath $filteredXpath;
 	private LinkRewriter $linkRewriter;
 	private const IGNORED_ELEMENTS = [
 		'xml', '#comment', 'script', 'svg', 'iframe', 'object', 'form',
@@ -22,9 +24,9 @@ class Filter {
 	private $blockElementsXpath;
 
 	public function __construct(string $source, string $baseUrl) {
-		$this->doc = new DOMDocument();
-		$this->doc->loadHTML($source, LIBXML_NOERROR);
-		$this->xpath = new DOMXPath($this->doc);
+		$this->sourceDoc = new DOMDocument();
+		$this->sourceDoc->loadHTML($source, LIBXML_NOERROR);
+		$this->sourcexpath = new DOMXPath($this->sourceDoc);
 		$this->blockElementsXpath =  ".//".implode("|.//", self::BLOCK_ELEMENTS);
 		$this->linkRewriter = new LinkRewriter($baseUrl);
 	}
@@ -32,12 +34,12 @@ class Filter {
 
 	public function __invoke(): string
 	{
-		return $this->traverse($this->doc->documentElement);
+		return $this->traverse($this->sourceDoc->documentElement);
 	}
 
 	private function hasTextOrImage(DomNode $element): bool 
 	{
-		return strlen(trim($element->nodeValue)) > 2 || $this->xpath->query(".//img", $element)->count() > 0;
+		return strlen(trim($element->nodeValue)) > 2 || $this->sourcexpath->query(".//img", $element)->count() > 0;
 	}
 
 	private function isHidden(DomNode $element): bool
@@ -112,7 +114,7 @@ class Filter {
 				if(!$this->hasTextOrImage($element)) {
 					return '';
 				}
-				if ($this->xpath->query($this->blockElementsXpath, $element)->count()) {
+				if ($this->sourcexpath->query($this->blockElementsXpath, $element)->count()) {
 					return $this->traverseChildren($element);        
 				}
 				return sprintf('<hr><div style="margin-bottom:20px">%s</div>',  $this->traverseChildren($element));
